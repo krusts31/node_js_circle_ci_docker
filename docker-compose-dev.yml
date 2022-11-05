@@ -1,0 +1,11 @@
+version: '2.4'
+
+services:
+  backend:
+    build:
+      context: ./backend/api
+      target: dev
+    ports:
+      - 3000:3000
+    volumes:
+      - ./backend/api/src/:/backend/api/src/
