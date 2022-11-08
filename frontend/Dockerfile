@@ -5,19 +5,13 @@ ENV NODE_ENV=production
 
 LABEL maintainer=ft_trancedance
 
-WORKDIR /backend
-
-COPY package.json package-lock.json tsconfig.json ./
+COPY *.json ./
 
 RUN apk add tini --no-cache \
 	&& npm config list \
 	&& npm ci \
-	&& npm outdated \
+#	&& npm outdated \
 	&& npm cache clean --force
-
-WORKDIR /backend/api
-
-COPY . .
 
 ENTRYPOINT ["tini", "--"]
 
@@ -28,23 +22,25 @@ ENV PATH /node_modules/.bin:$PATH
 
 ENV NODE_ENV=development
 
-WORKDIR /backend
+RUN npm install && npm cache clean --force
 
-RUN npm install --only=development \
-	&& npm cache clean --force
+COPY . ./frontend
 
-CMD ["npm", "run", "start:dev"] 
+WORKDIR ./frontend
+
+CMD ["npm", "start"] 
+
 ###PRE-PROD###
 FROM dev as build
 
 ENV NODE_ENV=development
 
-RUN npm install --only=development \
-	&& npm cache clean --force
+RUN npm install && npm cache clean --force
 
 COPY . .
 
 RUN npm run build
+
 ###TEST###
 FROM dev as test
 
@@ -56,13 +52,13 @@ FROM test as audit
 CMD ["npm", "run", "audit"]
 
 ###PROD###
-FROM base as prod
+FROM nginx:1.23.2-alpine as prod
 
-COPY --chown=node:node --from=build ./dist ./dist
+COPY --chown=nginx:nginx --from=build ./frontend/build ./build
 
-USER node
+COPY default.conf /etc/nginx/conf.d/
 
 HEALTHCHECK  --interval=30s --timeout=3s \
-  CMD wget --no-verbose --tries=3 --spider http://127.0.0.1:3000/ || exit 1
+  CMD wget --no-verbose --tries=3 --spider http://127.0.0.1:4242/ || exit 1
 
-CMD ["node", "/backend/dist/main.js"]
+CMD ["nginx", "-g", "daemon off;"]

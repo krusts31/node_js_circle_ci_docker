@@ -4,16 +4,12 @@ services:
   backend:
     build:
       context: ./backend
-      target: dev
+      target: prod
     ports:
       - 3000:3000
-    volumes:
-      - ./backend/src/:/backend/src/
   frontend:
     build:
       context: ./frontend
-      target: dev
+      target: prod
     ports:
       - 4242:4242
-    volumes:
-      - ./frontend/src/:/frontend/src/
